@@ -1,0 +1,15 @@
+package kotlinx.coroutines;
+
+import kotlin.Metadata;
+
+/* JADX INFO: loaded from: classes14.dex */
+@Metadata(d1 = {"kotlinx/coroutines/ThreadPoolDispatcherKt__MultithreadedDispatchers_commonKt", "kotlinx/coroutines/ThreadPoolDispatcherKt__ThreadPoolDispatcherKt"}, k = 4, mv = {2, 0, 0}, xi = 48)
+public final class ThreadPoolDispatcherKt {
+    public static final ExecutorCoroutineDispatcher newFixedThreadPoolContext(int nThreads, String name) {
+        return ThreadPoolDispatcherKt__ThreadPoolDispatcherKt.newFixedThreadPoolContext(nThreads, name);
+    }
+
+    public static final ExecutorCoroutineDispatcher newSingleThreadContext(String name) {
+        return ThreadPoolDispatcherKt__MultithreadedDispatchers_commonKt.newSingleThreadContext(name);
+    }
+}

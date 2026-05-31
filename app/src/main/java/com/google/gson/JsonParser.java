@@ -1,0 +1,70 @@
+package com.google.gson;
+
+import com.google.gson.internal.Streams;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.MalformedJsonException;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
+
+/* JADX INFO: loaded from: classes13.dex */
+public final class JsonParser {
+    @Deprecated
+    public JsonParser() {
+    }
+
+    public static JsonElement parseString(String json) throws JsonSyntaxException {
+        return parseReader(new StringReader(json));
+    }
+
+    public static JsonElement parseReader(Reader reader) throws JsonSyntaxException, JsonIOException {
+        try {
+            JsonReader jsonReader = new JsonReader(reader);
+            JsonElement element = parseReader(jsonReader);
+            if (!element.isJsonNull() && jsonReader.peek() != JsonToken.END_DOCUMENT) {
+                throw new JsonSyntaxException("Did not consume the entire document.");
+            }
+            return element;
+        } catch (MalformedJsonException e) {
+            e = e;
+            throw new JsonSyntaxException(e);
+        } catch (IOException e2) {
+            throw new JsonIOException(e2);
+        } catch (NumberFormatException e3) {
+            e = e3;
+            throw new JsonSyntaxException(e);
+        }
+    }
+
+    public static JsonElement parseReader(JsonReader reader) throws JsonSyntaxException, JsonIOException {
+        Strictness strictness = reader.getStrictness();
+        if (strictness == Strictness.LEGACY_STRICT) {
+            reader.setStrictness(Strictness.LENIENT);
+        }
+        try {
+            try {
+                return Streams.parse(reader);
+            } catch (OutOfMemoryError | StackOverflowError e) {
+                throw new JsonParseException("Failed parsing JSON source: " + reader + " to Json", e);
+            }
+        } finally {
+            reader.setStrictness(strictness);
+        }
+    }
+
+    @Deprecated
+    public JsonElement parse(String json) throws JsonSyntaxException {
+        return parseString(json);
+    }
+
+    @Deprecated
+    public JsonElement parse(Reader json) throws JsonSyntaxException, JsonIOException {
+        return parseReader(json);
+    }
+
+    @Deprecated
+    public JsonElement parse(JsonReader json) throws JsonSyntaxException, JsonIOException {
+        return parseReader(json);
+    }
+}

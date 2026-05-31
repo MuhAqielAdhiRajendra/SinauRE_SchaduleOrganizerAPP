@@ -1,0 +1,148 @@
+package com.google.crypto.tink.aead;
+
+import com.google.crypto.tink.Key;
+import com.google.crypto.tink.Parameters;
+import com.google.crypto.tink.SecretKeyAccess;
+import com.google.crypto.tink.aead.AesGcmParameters;
+import com.google.crypto.tink.internal.KeyParser;
+import com.google.crypto.tink.internal.KeySerializer;
+import com.google.crypto.tink.internal.MutableSerializationRegistry;
+import com.google.crypto.tink.internal.ParametersParser;
+import com.google.crypto.tink.internal.ParametersSerializer;
+import com.google.crypto.tink.internal.ProtoKeySerialization;
+import com.google.crypto.tink.internal.ProtoParametersSerialization;
+import com.google.crypto.tink.internal.Serialization;
+import com.google.crypto.tink.internal.Util;
+import com.google.crypto.tink.proto.AesGcmKeyFormat;
+import com.google.crypto.tink.proto.KeyData;
+import com.google.crypto.tink.proto.KeyTemplate;
+import com.google.crypto.tink.proto.OutputPrefixType;
+import com.google.crypto.tink.shaded.protobuf.ByteString;
+import com.google.crypto.tink.shaded.protobuf.ExtensionRegistryLite;
+import com.google.crypto.tink.shaded.protobuf.InvalidProtocolBufferException;
+import com.google.crypto.tink.util.Bytes;
+import com.google.crypto.tink.util.SecretBytes;
+import java.security.GeneralSecurityException;
+import javax.annotation.Nullable;
+
+/* JADX INFO: loaded from: classes13.dex */
+final class AesGcmProtoSerialization {
+    private static final String TYPE_URL = "type.googleapis.com/google.crypto.tink.AesGcmKey";
+    private static final Bytes TYPE_URL_BYTES = Util.toBytesFromPrintableAscii(TYPE_URL);
+    private static final ParametersSerializer<AesGcmParameters, ProtoParametersSerialization> PARAMETERS_SERIALIZER = ParametersSerializer.create(new ParametersSerializer.ParametersSerializationFunction() { // from class: com.google.crypto.tink.aead.AesGcmProtoSerialization$$ExternalSyntheticLambda0
+        @Override // com.google.crypto.tink.internal.ParametersSerializer.ParametersSerializationFunction
+        public final Serialization serializeParameters(Parameters parameters) {
+            return AesGcmProtoSerialization.serializeParameters((AesGcmParameters) parameters);
+        }
+    }, AesGcmParameters.class, ProtoParametersSerialization.class);
+    private static final ParametersParser<ProtoParametersSerialization> PARAMETERS_PARSER = ParametersParser.create(new ParametersParser.ParametersParsingFunction() { // from class: com.google.crypto.tink.aead.AesGcmProtoSerialization$$ExternalSyntheticLambda1
+        @Override // com.google.crypto.tink.internal.ParametersParser.ParametersParsingFunction
+        public final Parameters parseParameters(Serialization serialization) {
+            return AesGcmProtoSerialization.parseParameters((ProtoParametersSerialization) serialization);
+        }
+    }, TYPE_URL_BYTES, ProtoParametersSerialization.class);
+    private static final KeySerializer<AesGcmKey, ProtoKeySerialization> KEY_SERIALIZER = KeySerializer.create(new KeySerializer.KeySerializationFunction() { // from class: com.google.crypto.tink.aead.AesGcmProtoSerialization$$ExternalSyntheticLambda2
+        @Override // com.google.crypto.tink.internal.KeySerializer.KeySerializationFunction
+        public final Serialization serializeKey(Key key, SecretKeyAccess secretKeyAccess) {
+            return AesGcmProtoSerialization.serializeKey((AesGcmKey) key, secretKeyAccess);
+        }
+    }, AesGcmKey.class, ProtoKeySerialization.class);
+    private static final KeyParser<ProtoKeySerialization> KEY_PARSER = KeyParser.create(new KeyParser.KeyParsingFunction() { // from class: com.google.crypto.tink.aead.AesGcmProtoSerialization$$ExternalSyntheticLambda3
+        @Override // com.google.crypto.tink.internal.KeyParser.KeyParsingFunction
+        public final Key parseKey(Serialization serialization, SecretKeyAccess secretKeyAccess) {
+            return AesGcmProtoSerialization.parseKey((ProtoKeySerialization) serialization, secretKeyAccess);
+        }
+    }, TYPE_URL_BYTES, ProtoKeySerialization.class);
+
+    private static OutputPrefixType toProtoOutputPrefixType(AesGcmParameters.Variant variant) throws GeneralSecurityException {
+        if (AesGcmParameters.Variant.TINK.equals(variant)) {
+            return OutputPrefixType.TINK;
+        }
+        if (AesGcmParameters.Variant.CRUNCHY.equals(variant)) {
+            return OutputPrefixType.CRUNCHY;
+        }
+        if (AesGcmParameters.Variant.NO_PREFIX.equals(variant)) {
+            return OutputPrefixType.RAW;
+        }
+        throw new GeneralSecurityException("Unable to serialize variant: " + variant);
+    }
+
+    private static AesGcmParameters.Variant toVariant(OutputPrefixType outputPrefixType) throws GeneralSecurityException {
+        switch (outputPrefixType) {
+            case TINK:
+                return AesGcmParameters.Variant.TINK;
+            case CRUNCHY:
+            case LEGACY:
+                return AesGcmParameters.Variant.CRUNCHY;
+            case RAW:
+                return AesGcmParameters.Variant.NO_PREFIX;
+            default:
+                throw new GeneralSecurityException("Unable to parse OutputPrefixType: " + outputPrefixType.getNumber());
+        }
+    }
+
+    private static void validateParameters(AesGcmParameters parameters) throws GeneralSecurityException {
+        if (parameters.getTagSizeBytes() != 16) {
+            throw new GeneralSecurityException(String.format("Invalid tag size in bytes %d. Currently Tink only supports serialization of AES GCM keys with tag size equal to 16 bytes.", Integer.valueOf(parameters.getTagSizeBytes())));
+        }
+        if (parameters.getIvSizeBytes() != 12) {
+            throw new GeneralSecurityException(String.format("Invalid IV size in bytes %d. Currently Tink only supports serialization of AES GCM keys with IV size equal to 12 bytes.", Integer.valueOf(parameters.getIvSizeBytes())));
+        }
+    }
+
+    /* JADX INFO: Access modifiers changed from: private */
+    public static ProtoParametersSerialization serializeParameters(AesGcmParameters parameters) throws GeneralSecurityException {
+        validateParameters(parameters);
+        return ProtoParametersSerialization.create((KeyTemplate) KeyTemplate.newBuilder().setTypeUrl(TYPE_URL).setValue(((AesGcmKeyFormat) AesGcmKeyFormat.newBuilder().setKeySize(parameters.getKeySizeBytes()).build()).toByteString()).setOutputPrefixType(toProtoOutputPrefixType(parameters.getVariant())).build());
+    }
+
+    /* JADX INFO: Access modifiers changed from: private */
+    public static ProtoKeySerialization serializeKey(AesGcmKey key, @Nullable SecretKeyAccess access) throws GeneralSecurityException {
+        validateParameters(key.getParameters());
+        return ProtoKeySerialization.create(TYPE_URL, ((com.google.crypto.tink.proto.AesGcmKey) com.google.crypto.tink.proto.AesGcmKey.newBuilder().setKeyValue(ByteString.copyFrom(key.getKeyBytes().toByteArray(SecretKeyAccess.requireAccess(access)))).build()).toByteString(), KeyData.KeyMaterialType.SYMMETRIC, toProtoOutputPrefixType(key.getParameters().getVariant()), key.getIdRequirementOrNull());
+    }
+
+    /* JADX INFO: Access modifiers changed from: private */
+    public static AesGcmParameters parseParameters(ProtoParametersSerialization serialization) throws GeneralSecurityException {
+        if (!serialization.getKeyTemplate().getTypeUrl().equals(TYPE_URL)) {
+            throw new IllegalArgumentException("Wrong type URL in call to AesGcmParameters.parseParameters: " + serialization.getKeyTemplate().getTypeUrl());
+        }
+        try {
+            AesGcmKeyFormat format = AesGcmKeyFormat.parseFrom(serialization.getKeyTemplate().getValue(), ExtensionRegistryLite.getEmptyRegistry());
+            return AesGcmParameters.builder().setKeySizeBytes(format.getKeySize()).setIvSizeBytes(12).setTagSizeBytes(16).setVariant(toVariant(serialization.getKeyTemplate().getOutputPrefixType())).build();
+        } catch (InvalidProtocolBufferException e) {
+            throw new GeneralSecurityException("Parsing AesGcmParameters failed: ", e);
+        }
+    }
+
+    /* JADX INFO: Access modifiers changed from: private */
+    public static AesGcmKey parseKey(ProtoKeySerialization serialization, @Nullable SecretKeyAccess access) throws GeneralSecurityException {
+        if (!serialization.getTypeUrl().equals(TYPE_URL)) {
+            throw new IllegalArgumentException("Wrong type URL in call to AesGcmParameters.parseParameters");
+        }
+        try {
+            com.google.crypto.tink.proto.AesGcmKey protoKey = com.google.crypto.tink.proto.AesGcmKey.parseFrom(serialization.getValue(), ExtensionRegistryLite.getEmptyRegistry());
+            if (protoKey.getVersion() != 0) {
+                throw new GeneralSecurityException("Only version 0 keys are accepted");
+            }
+            AesGcmParameters parameters = AesGcmParameters.builder().setKeySizeBytes(protoKey.getKeyValue().size()).setIvSizeBytes(12).setTagSizeBytes(16).setVariant(toVariant(serialization.getOutputPrefixType())).build();
+            return AesGcmKey.builder().setParameters(parameters).setKeyBytes(SecretBytes.copyFrom(protoKey.getKeyValue().toByteArray(), SecretKeyAccess.requireAccess(access))).setIdRequirement(serialization.getIdRequirementOrNull()).build();
+        } catch (InvalidProtocolBufferException e) {
+            throw new GeneralSecurityException("Parsing AesGcmKey failed");
+        }
+    }
+
+    public static void register() throws GeneralSecurityException {
+        register(MutableSerializationRegistry.globalInstance());
+    }
+
+    public static void register(MutableSerializationRegistry registry) throws GeneralSecurityException {
+        registry.registerParametersSerializer(PARAMETERS_SERIALIZER);
+        registry.registerParametersParser(PARAMETERS_PARSER);
+        registry.registerKeySerializer(KEY_SERIALIZER);
+        registry.registerKeyParser(KEY_PARSER);
+    }
+
+    private AesGcmProtoSerialization() {
+    }
+}

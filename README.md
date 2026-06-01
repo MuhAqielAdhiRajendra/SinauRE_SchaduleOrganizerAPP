@@ -5,4 +5,4 @@ Aplikasi ini menyimpan API key, provider, dan model AI menggunakan `EncryptedSha
 - Enkripsi key: AES256_SIV
 - Enkripsi value: AES256_GCM
 
-Meskipun data terenkripsi di file `ai_settings.xml`, pada lingkungan rooted atau emulator, data dapat dibajak melalui hooking Frida pada fungsi `getApiKey()` saat runtime.
+Meskipun data terenkripsi di file `ai_settings.xml`, pada lingkungan rooted atau emulator, data dapat dibajak melalui hooking  pada fungsi `getApiKey()` saat runtime.
